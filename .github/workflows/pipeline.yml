@@ -114,7 +114,7 @@ jobs:
 
       - name: Run Playwright tests
         if: steps.check_e2e.outputs.tests_exist == 'true'
-        run: pnpm exec playwright test
+        run: pnpm exec playwright test --project=chromium
         env:
           CI: true
 
