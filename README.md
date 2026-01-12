@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Next.js Starter Template
+
+Production-ready Next.js 16 starter with opinionated architecture, pre-configured tooling, and AI-friendly instructions.
+
+## Tech Stack
+
+| Category      | Technology                            |
+| ------------- | ------------------------------------- |
+| **Framework** | Next.js 16 (App Router)               |
+| **Language**  | TypeScript (Strict Mode)              |
+| **Styling**   | Tailwind CSS 4 + Shadcn UI            |
+| **State**     | nuqs (URL) + TanStack Query + Zustand |
+| **Database**  | PostgreSQL + Prisma 7                 |
+| **Auth**      | Better Auth                           |
+| **Forms**     | React Hook Form + Zod                 |
+| **i18n**      | next-intl                             |
+| **Email**     | Nodemailer + React Email              |
+| **Animation** | Motion (Framer) + GSAP + Lenis        |
+| **Testing**   | Vitest + Playwright                   |
+| **Linting**   | Biome                                 |
+
+## Project Structure
+
+```
+├── app/                 # Next.js App Router (Pages & API Routes)
+├── components/          # UI Components (Shadcn + Custom)
+├── lib/                 # Infrastructure & Configs (db, auth, mail)
+├── helpers/             # Pure Utilities (formatters, validators)
+├── hooks/               # React Hooks
+├── services/            # Business Logic Layer
+├── repositories/        # Data Access Layer
+├── stores/              # Zustand Stores
+├── dictionaries/        # i18n Translation Files
+├── emails/              # React Email Templates
+├── e2e/                 # Playwright E2E Tests
+├── tests/               # Vitest Integration Tests
+└── .instructions/       # AI Context Files
+```
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Install dependencies
+pnpm install
+
+# Setup database
+pnpm prisma generate
+pnpm prisma db push
+
+# Run development server
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command                 | Description            |
+| ----------------------- | ---------------------- |
+| `pnpm dev`              | Start dev server       |
+| `pnpm build`            | Build for production   |
+| `pnpm email`            | Start email dev server |
+| `pnpm lint`             | Lint with Biome        |
+| `pnpm format`           | Format with Biome      |
+| `pnpm test:integration` | Run Vitest tests       |
+| `pnpm test:e2e`         | Run Playwright tests   |
 
-## Learn More
+## AI Instructions
 
-To learn more about Next.js, take a look at the following resources:
+The `.instructions/` directory contains context files for AI assistants:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| File                        | Purpose                              |
+| --------------------------- | ------------------------------------ |
+| `00-master-context.md`      | Project identity, conventions, rules |
+| `01-product-context.md`     | Product vision, UI/UX guidelines     |
+| `02-system-context.md`      | Architecture, layers, patterns       |
+| `03-quality-ops-context.md` | Testing, CI/CD, monitoring           |
+| `99-active-context.md`      | Current development log              |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Environment Variables
 
-## Deploy on Vercel
+```env
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/db"
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Auth
+BETTER_AUTH_SECRET="your-secret"
+BETTER_AUTH_URL="http://localhost:3000"
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Email
+SMTP_HOST="smtp.example.com"
+SMTP_PORT="587"
+SMTP_USER="your-email"
+SMTP_PASS="your-password"
+SMTP_FROM="noreply@example.com"
+```
+
+## License
+
+MIT

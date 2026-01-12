@@ -1,0 +1,21 @@
+FROM node:20-alpine
+WORKDIR /app
+
+RUN apk add --no-cache libc6-compat python3 make g++
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+
+COPY package.json pnpm-lock.yaml ./
+
+RUN pnpm install
+
+COPY . .
+
+RUN pnpm prisma generate
+
+EXPOSE 3000
+CMD ["pnpm", "run", "dev"]

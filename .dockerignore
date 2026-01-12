@@ -1,0 +1,13 @@
+Dockerfile
+.dockerignore
+node_modules
+pnpm-debug.log
+README.md
+.next
+.git
+.env*
+.instructions
+tests
+test-results
+e2e
+playwright-report

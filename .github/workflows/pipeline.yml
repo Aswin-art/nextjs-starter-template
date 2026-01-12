@@ -1,0 +1,168 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["README.md", "docs/**"]
+  pull_request:
+    branches: [main]
+    paths-ignore: ["README.md", "docs/**"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # JOB 1: Build & Lint
+  build:
+    name: Build & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit & Integration Tests (Vitest)
+        shell: bash
+        run: |
+          if [ -d "tests" ]; then
+            echo "✅ 'tests' folder found. Running Vitest..."
+            pnpm test:integration --passWithNoTests
+          else
+            echo "⚠️ 'tests' directory not found. Skipping Unit/Integration tests."
+          fi
+
+      - name: Build application
+        run: pnpm build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            .next/standalone
+            .next/static
+            public
+          retention-days: 1
+
+  # JOB 2: E2E Testing
+  e2e-test:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: .next
+
+      - name: Check for E2E tests directory
+        id: check_e2e
+        shell: bash
+        run: |
+          if [ -d "e2e" ] && [ -n "$(find e2e -name '*.spec.ts' -o -name '*.test.ts' | head -n 1)" ]; then
+            echo "tests_exist=true" >> $GITHUB_OUTPUT
+            echo "✅ E2E tests found in 'e2e' directory."
+          else
+            echo "tests_exist=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No E2E tests found in 'e2e' directory. Skipping."
+          fi
+
+      - name: Install Playwright browsers
+        if: steps.check_e2e.outputs.tests_exist == 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        if: steps.check_e2e.outputs.tests_exist == 'true'
+        run: pnpm exec playwright test
+        env:
+          CI: true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # JOB 3: Docker
+  docker:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: e2e-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: .next-prebuilt
+
+      - name: Prepare artifacts structure
+        run: |
+          mkdir -p .next-prebuilt/.next
+          mv .next-prebuilt/standalone .next-prebuilt/.next/standalone
+          mv .next-prebuilt/static .next-prebuilt/.next/static
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.prod
+          # push: ${{ github.event_name != 'pull_request' }}
+          push: false
+          tags: ghcr.io/${{ github.repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
