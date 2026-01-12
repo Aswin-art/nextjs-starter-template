@@ -11,3 +11,4 @@ tests
 test-results
 e2e
 playwright-report
+generated

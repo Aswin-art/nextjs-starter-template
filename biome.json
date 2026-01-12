@@ -14,7 +14,8 @@
       "!dist",
       "!build",
       "!lib/utils",
-      "!components/ui"
+      "!components/ui",
+      "!generated/prisma"
     ]
   },
   "formatter": {
